@@ -6,7 +6,7 @@
 #include <boost/bimap.hpp>
 #include <optional>
 #include <iomanip>
-
+#define DEBUG 1
 #define Epsilon "ε"
 
 using ID = int;
@@ -25,6 +25,35 @@ bool inline setsHaveIntersect(const std::set<T>& set1, const std::set<T>& set2) 
         [&set2](const T& elem) { return set2.find(elem) != set2.end(); }
     );
 }
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const std::set<T>& set)
+{
+    // 检查集合是否为空
+    if (set.empty())
+    {
+        return os << "{}";
+    }
+
+    // 打印集合的开始符号
+    os << "{ ";
+
+    // 遍历集合并打印每个元素
+    for (auto it = set.begin(); it != set.end(); ++it)
+    {
+        os << *it;
+        // 如果不是最后一个元素，则添加逗号和空格
+        if (std::next(it) != set.end())
+        {
+            os << ", ";
+        }
+    }
+
+    // 打印集合的结束符号
+    os << " }";
+    return os;
+}
+
 
 template <typename StateType>
 class MappingCollection {

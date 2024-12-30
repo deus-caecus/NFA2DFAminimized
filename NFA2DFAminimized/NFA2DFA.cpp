@@ -29,6 +29,10 @@ void NFA2DFA(const NFA& nfa, DFA& dfa)
 				SetStates sourceState = nfa.getEpsilonClosure(currentState);
 				SetStates targetState = nfa.getNextStates(sourceState, input);
 
+				if (targetState.empty())
+				{
+					continue;
+				}
 				StatesID targetID;
 				StatesID sourceID;
 				if (allSetStates.find(targetState) == allSetStates.end())
@@ -44,11 +48,13 @@ void NFA2DFA(const NFA& nfa, DFA& dfa)
 				}
 				auto pair = std::make_pair(sourceID, input);
 				dfa.transitionMapID[pair] = targetID;
-
 			}
 		}
 		//分段式处理新增状态
 		allSetStates.insert(newAddSetStates.begin(), newAddSetStates.end());
 		currentSetStates = newAddSetStates;
 	}
+#if DEBUG
+	dfa.printTransitionMapName();
+#endif
 }
