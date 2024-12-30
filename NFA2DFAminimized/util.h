@@ -1,140 +1,118 @@
 #pragma once
-#include "debug_macros.h"
-#include<string>
-#include<set>
-#include<map>
-#include<boost/bimap.hpp>
-#include<optional>
+#include <iostream>
+#include <string>
+#include <set>
+#include <map>
+#include <boost/bimap.hpp>
+#include <optional>
+#include <iomanip>
+
+#define Epsilon "ε"
+
 using ID = int;
 using StatesID = int;
 using InputID = int;
 using Name = std::string;
 using StatesName = std::string;
 using InputName = std::string;
+using SetStates = std::set<StatesID>; // 用于表示子集法中的集合状态
 
+// 判断集合相交
+template <typename T>
+bool inline setsHaveIntersect(const std::set<T>& set1, const std::set<T>& set2) {
+    return std::any_of(
+        set1.begin(), set1.end(),
+        [&set2](const T& elem) { return set2.find(elem) != set2.end(); }
+    );
+}
 
-class MappingCollection
-{
-protected:
-	ID autoID = 0;
-	boost::bimap<Name, ID> nameID_Bimap;
-	std::set<ID> usedID;
+template <typename StateType>
+class MappingCollection {
 public:
-	MappingCollection() = default;
-	//MappingCollection(const std::set<Name>& nameSet)
-	//{
-	//	for (const auto& Name : nameSet)
-	//	{
-	//		addName(Name);
-	//	}
-	//}
+    ID autoID = 0;
+    boost::bimap<StateType, ID> stateID_Bimap; // 每个state对应于唯一ID
+    std::set<ID> usedID;
 
-	ID addName( const Name& name,std::optional<ID> id = std::nullopt )
-	{
-		ID insertID ;
+    MappingCollection() = default;
 
-		if (id.has_value()) 
-		{
-			insertID = id.value();
-			if (usedID.find(insertID) != usedID.end()) 
-			{
-				DEBUG("Provided ID is already in use,available autoID will be used");
-				insertID = getNextAutoID();
-			}
-		}
-		else
-		{
-			insertID = getNextAutoID();
-		}
-		auto result =nameID_Bimap.insert(boost::bimap<Name, ID>::value_type(name, insertID));
+    ID addState(const StateType& state, std::optional<ID> id = std::nullopt) {
+        ID insertID;
 
-		if (result.second)
-		{
-			DEBUG("Inserted element: " << result.first->left << " -> " << result.first->right << "\n");
-		}
-		else
-		{
-			DEBUG( "Element already exists.\n");
-		}
-		return insertID;
-	}
+        if (id.has_value()) {
+            insertID = id.value();
+            if (usedID.find(insertID) != usedID.end()) {
+                insertID = getNextAutoID();
+            }
+        }
+        else {
+            insertID = getNextAutoID();
+        }
 
-	ID getIDByName(const Name& name) const {
-		auto it = nameID_Bimap.left.find(name);
-		if (it != nameID_Bimap.left.end()) {
-			DEBUG("Found ID for name: " << name << " -> " << it->second << "\n");
-			return it->second;
-		}
-		throw std::runtime_error("Name not found in mapping.");
-	}
+        auto result = stateID_Bimap.insert(boost::bimap<StateType, ID>::value_type(state, insertID));
 
-	Name getNameByID(ID id) const {
-		auto it = nameID_Bimap.right.find(id);
-		if (it != nameID_Bimap.right.end()) {
-			DEBUG("Found name for ID: " << id << " -> " << it->second << "\n");
-			return it->second;
-		}
-		throw std::runtime_error("ID not found in mapping.");
-	}
+        if (result.second) {
+            usedID.insert(insertID);
+        }
+        else {
+            return result.first->right;
+        }
+        return insertID;
+    }
+    ID getIDByState(const StateType& state) const {
+        auto it = stateID_Bimap.left.find(state);
+        if (it != stateID_Bimap.left.end()) {
+            return it->second;
+        }
+        throw std::runtime_error("Name not found in mapping.");
+    }
+    StateType getStateByID(ID id) const {
+        auto it = stateID_Bimap.right.find(id);
+        if (it != stateID_Bimap.right.end()) {
+            return it->second;
+        }
+        throw std::runtime_error("ID not found in mapping.");
+    }
+
 private:
-	ID getNextAutoID() {
-		while (usedID.find(autoID) != usedID.end()) {
-			autoID++;
-		}
-		return autoID++;
-	}
+    ID getNextAutoID() {
+        while (usedID.find(autoID) != usedID.end()) {
+            autoID++;
+        }
+        return autoID;
+    }
 };
 
-class StatesMappingCollection :public MappingCollection{};
+class DFA;
 
-class InputMappingCollection:public MappingCollection{};
-
-//class TransitionFunction
-//{
-//private:
-//	std::map<std::pair<StatesID, InputID>, std::set<StatesID>> transitionMap;
-//public:
-//	TransitionFunction() {};
-//
-//	void addMap(StatesID startState,InputID input,std::set<StatesID> endStates)
-//	{
-//		auto key = std::make_pair(startState, input);
-//		transitionMap[key] = endStates;
-//	}
-//};
-
-class FSM //Finite State Machine
-{
-private:
-	StatesMappingCollection states;
-	InputMappingCollection inputs;
-	std::map<std::pair<StatesID, InputID>, std::set<StatesID>> transitionMapID;
-	StatesID start;
-	std::set<StatesID> end;
+class NFA {
 public:
-	FSM(const std::map<std::pair<StatesName, InputName>, std::set<StatesName>>& transitionMapName,
-		const StatesName& start,std::set<StatesName> end)
-	{
-		for (const auto& item : transitionMapName)
-		{
-			const auto& [stateInputPair, targetStates] = item;
-			const auto& [stateName, inputName] = stateInputPair;
+    MappingCollection<Name> states;
+    MappingCollection<Name> inputs; // Name mapping to ID
+    std::map<std::pair<StatesID, InputID>, std::set<StatesID>> transitionMapID;
+    StatesID start;
+    std::set<StatesID> end;
 
-			ID stateID = states.addName(stateName);
-			ID inputID = inputs.addName(inputName);
+    NFA() = default;
+    NFA(const std::map<std::pair<StatesName, InputName>, std::set<StatesName>>& transitionMapName,
+        const StatesName& start, const std::set<StatesName>& end);
 
-			auto pair = std::make_pair(stateID, inputID);
-			std::set<ID> idset;
-			for (const auto& state : targetStates)
-			{
-				stateID = states.getIDByName(state);
-				idset.insert(stateID);
-			}
-			transitionMapID[pair] = idset;
-		}
-		
-	}
+    std::set<ID> getNextStates(const std::set<ID>& currentStateSet, InputID inputID) const;
+    std::set<ID> getEpsilonClosure(const std::set<ID>& stateSet) const;
 
-
+    friend void NFA2DFA(const NFA& nfa, DFA& dfa);
 };
+
+class DFA {
+public:
+    MappingCollection<SetStates> states;
+    MappingCollection<Name> nameID; // std::set<StatesID> or StatesName mapping to ID
+    MappingCollection<Name> inputs; // Name mapping to ID
+    std::map<std::pair<StatesID, InputID>, StatesID> transitionMapID;
+    StatesID start;
+    std::set<StatesID> end;
+
+    DFA() = default;
+    void printTransitionMapName() const;
+};
+
 

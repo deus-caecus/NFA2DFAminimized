@@ -128,10 +128,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DFAminizing.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="NFA2DFA.cpp" />
+    <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="debug_macros.h" />
     <ClInclude Include="DFAminizing.h" />
     <ClInclude Include="NFA2DFA.h" />
     <ClInclude Include="util.h" />
