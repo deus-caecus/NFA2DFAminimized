@@ -99,9 +99,10 @@ std::set<ID> NFA::getEpsilonClosure(const std::set<ID>& stateSet) const
 	return closure;
 }
 
-void DFA::printTransitionMapName() const//不对
+void DFA::printTransitionMapName() const
 {
 	const int columnWidth = 20;
+	std::cout << "start:" << this->start << " " << "end:" << this->end << std::endl;
 	//table head
 	const auto& inputView = inputs.stateID_Bimap.left;
 	std::cout << std::left << std::setw(columnWidth) << "state\\input";
@@ -116,25 +117,18 @@ void DFA::printTransitionMapName() const//不对
 	{
 		std::ostringstream oss;
 		oss << stateSet << ":" << stateID;
-		
-		std::cout << std::left << std::setw(columnWidth) <<oss.str();
-		for (const auto& [inputName,inputID] : inputView)
+
+		std::cout << std::left << std::setw(columnWidth) << oss.str();
+		for (const auto& [inputName, inputID] : inputView)
 		{
 			auto it = transitionMapID.find(std::make_pair(stateID, inputID));
 			if (it != transitionMapID.end())
 			{
-				if (it->second)
-				{
-					SetStates stateSet = this->states.getStateByID(it->second);
-					std::ostringstream oss;
-					oss <<stateSet << ":" << it->second;
-					std::string combinedString = oss.str();
-					std::cout << std::setw(columnWidth) <<combinedString;
-				}
-				else
-				{
-					std::cout << std::setw(columnWidth) << "-";
-				}
+				SetStates stateSet = this->states.getStateByID(it->second);
+				std::ostringstream oss;
+				oss << stateSet << ":" << it->second;
+				std::string combinedString = oss.str();
+				std::cout << std::setw(columnWidth) << combinedString;
 			}
 			else
 			{

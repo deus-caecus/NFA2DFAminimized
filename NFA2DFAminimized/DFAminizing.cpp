@@ -30,10 +30,9 @@ void DFAminizing(const DFA& dfa, DFA& dfaMinimized)
 	}
 	for (const auto& [originalSet, id] : dfaMinimized.states.stateID_Bimap.left)
 	{
-		if (setsHaveIntersect(originalSet, dfaMinimized.end))
+		if (setsHaveIntersect(originalSet, dfa.end))
 		{
 			dfaMinimized.end.insert(id);
-			break;
 		}
 	}
 
@@ -41,84 +40,81 @@ void DFAminizing(const DFA& dfa, DFA& dfaMinimized)
 	{
 		for (const auto& [originalSet, id] : dfaMinimized.states.stateID_Bimap.left)
 		{
-			for (StatesID state : originalSet)
+			StatesID sampleState = *originalSet.begin();
+			auto targetIterator = dfa.transitionMapID.find(std::make_pair(sampleState, inputID));
+			if (targetIterator != dfa.transitionMapID.end())
 			{
-				auto targetIterator = dfa.transitionMapID.find(std::make_pair(state, inputID));
-				if (targetIterator != dfa.transitionMapID.end())
+				StatesID targetState = targetIterator->second;
+				for (const auto& [targetSet, targetID] : dfaMinimized.states.stateID_Bimap.left)
 				{
-					StatesID targetState = targetIterator->second;
-					for (const auto& [targetSet, targetID] : dfaMinimized.states.stateID_Bimap.left)
+					if (targetSet.find(targetState) != targetSet.end())
 					{
-						if (targetSet.find(targetState) != targetSet.end())
-						{
-							dfaMinimized.transitionMapID[{id, inputID}] = targetID;
-							break;
-						}
+						dfaMinimized.transitionMapID[{id, inputID}] = targetID;
+						break;
 					}
 				}
 			}
+
 		}
 	}
 
 }
 
-void dividingSet(const DFA& dfa,std::set<SetStates>& equivalenceSet)
+void dividingSet(const DFA& dfa, std::set<SetStates>& equivalenceSet)
 {
-	bool changed = false;
-	std::set<SetStates> newEquivalenceSet;
-	std::set<SetStates> currentEquivalenceSet(equivalenceSet);
-	for (const SetStates& originalSet : currentEquivalenceSet)
+	bool changed;
+	do
 	{
-		std::set<SetStates> splitSet;
-		for (const auto& [inputName, inputID] : dfa.inputs.stateID_Bimap.left)
+	start:
+		changed = false;
+		std::set<SetStates> currentEquivalenceSet(equivalenceSet);
+		for (const SetStates& originalSet : currentEquivalenceSet)
 		{
-			std::multimap<SetStates, StatesID> divisionByTargetSet;
-
-			//dividing the set which is being iterating by it's elements' target value,
-			// which set in different equivalence sets
-			for (const StatesID state : originalSet)
+			if (originalSet.size() == 1)
+				continue;
+			for (const auto& [inputName, inputID] : dfa.inputs.stateID_Bimap.left)
 			{
-				auto targetIterator= dfa.transitionMapID.find(std::make_pair(state,inputID));
-				if (targetIterator != dfa.transitionMapID.end())
+				//dividing the set which is being iterating by it's elements' target value,
+				// which set in two different equivalence sets
+				std::map<SetStates, SetStates> splitMap;//std::map<targetEquivalenceSet,source>
+				SetStates invalidStates;
+				for (const StatesID state : originalSet)
 				{
-					//find the targeting equivalenceSet
-					StatesID targetState = targetIterator->second;
-					for (const SetStates& set : currentEquivalenceSet)
+					auto targetIterator = dfa.transitionMapID.find(std::make_pair(state, inputID));
+					if (targetIterator == dfa.transitionMapID.end())
 					{
-						if (set.find(targetState) != set.end())
+						invalidStates.insert(state);
+						continue;
+					}
+					StatesID targetState = targetIterator->second;
+					auto targetSetIter = std::find_if(
+						equivalenceSet.begin(), equivalenceSet.end(),
+						[targetState](const SetStates& set)
 						{
-							divisionByTargetSet.insert(std::make_pair(set, state));
-							break;
-						}
+							return set.find(targetState) != set.end();
+						});
+
+					if (targetSetIter != equivalenceSet.end())
+					{
+						splitMap[*targetSetIter].insert(state);
 					}
 				}
-			}
-
-			for (const auto& targetSourceStatePair : divisionByTargetSet)
-			{
-				std::set<StatesID> newSet;
-
-				auto range = divisionByTargetSet.equal_range(targetSourceStatePair.first);
-				
-				for (auto& it = range.first; it != range.second; ++it)
+				if (!invalidStates.empty())
+					splitMap[invalidStates] = invalidStates;
+				if (splitMap.size() > 1)
 				{
-					newSet.insert(it->second);
+					changed = true;
+					equivalenceSet.erase(originalSet);
+					for (const auto& [_, part] : splitMap)
+					{
+						equivalenceSet.insert(part);
+					}
+					goto start;//若内层循环引发等价类改变，currentEquivalenceSet失真,重启循环
 				}
-				if (!newSet.empty())
-				{
-					splitSet.insert(newSet);
-				}
-			}
-
-			if(splitSet.size()>1)
-			{
-				changed = true;
-				equivalenceSet.insert(splitSet.begin(), splitSet.end());
-				equivalenceSet.erase(originalSet);
 			}
 		}
-	}
-	if (changed)
-		dividingSet(dfa, equivalenceSet);
+
+	} while (changed);
+
 }
 
