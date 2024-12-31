@@ -4,15 +4,26 @@
 NFA::NFA(const std::map<std::pair<StatesName, InputName>, std::set<StatesName>>& transitionMapName,
 	const StatesName& start, const std::set<StatesName>& end)
 {
-
+	
 	for (const auto& item : transitionMapName)
 	{
 		const auto& [stateInputPair, targetStates] = item;
 		const auto& [stateName, inputName] = stateInputPair;
 
 		states.addState(stateName);
+		for (const auto& targetName : targetStates)
+			states.addState(targetName);
 		inputs.addState(inputName);
 	}
+#if DEBUG
+	std::cout << "states" << std::endl;
+	for (const auto& [stateName, stateID] : this->states.stateID_Bimap.left)
+		std::cout << stateName << ":" << stateID << std::endl;
+	std::cout << "inputs" << std::endl;
+	for (const auto& [inputName, inputID] : this->inputs.stateID_Bimap.left)
+		std::cout << inputName << ":" << inputID << std::endl;
+	std::cout << "transitionTable" << std::endl;
+#endif
 	for (const auto& item : transitionMapName)
 	{
 		const auto& [stateInputPair, targetStates] = item;

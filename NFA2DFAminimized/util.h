@@ -92,14 +92,16 @@ public:
         if (it != stateID_Bimap.left.end()) {
             return it->second;
         }
-        throw std::runtime_error("Name not found in mapping.");
+        std::cerr << "Name not found in mapping." << std::endl;
+        std::abort();
     }
     StateType getStateByID(ID id) const {
         auto it = stateID_Bimap.right.find(id);
         if (it != stateID_Bimap.right.end()) {
             return it->second;
         }
-        throw std::runtime_error("ID not found in mapping.");
+        std::cerr << "ID not found in mapping." << std::endl;
+        std::abort();
     }
 
 private:

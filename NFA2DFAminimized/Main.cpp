@@ -13,14 +13,13 @@ int main()
 	std::map<std::pair<StatesName, InputName>, std::set<StatesName>> NFAtransitionMap = {
 		// q0 transitions
    {{"q0", Epsilon}, {"q1", "q2"}},   // epsilon-transition to q1 and q2
-
    // q1 transitions
-   {{"q1", "a"}, {"q1", "q3"}},  // From q1 on 'a', transition to q1 and q3
+   {{"q1", "a"}, {"q1", "q4"}},  // From q1 on 'a', transition to q1 and q3
    {{"q1", "b"}, {"q2"}},        // From q1 on 'b', transition to q2
 
    // q2 transitions
    {{"q2", "a"}, {"q3"}},        // From q2 on 'a', transition to q3
-   {{"q2", "b"}, {"q1"}},        // From q2 on 'b', transition to q1
+   {{"q2", "c"}, {"q1"}},        // From q2 on 'b', transition to q1
 
    // q3 transitions
    {{"q3", "a"}, {"q3"}},        // From q3 on 'a', stay in q3
