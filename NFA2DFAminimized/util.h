@@ -16,7 +16,7 @@ using Name = std::string;
 using StatesName = std::string;
 using InputName = std::string;
 using SetStates = std::set<StatesID>; // 用于表示子集法中的集合状态
-
+using TransitionMap = std::map<std::pair<StatesName, InputName>, std::set<StatesName>>;
 // 判断集合相交
 template <typename T>
 bool inline setsHaveIntersect(const std::set<T>& set1, const std::set<T>& set2) {
@@ -124,7 +124,7 @@ public:
     std::set<StatesID> end;
 
     NFA() = default;
-    NFA(const std::map<std::pair<StatesName, InputName>, std::set<StatesName>>& transitionMapName,
+    NFA(const TransitionMap& transitionMapName,
         const StatesName& start, const std::set<StatesName>& end);
 
     std::set<ID> getNextStates(const std::set<ID>& currentStateSet, InputID inputID) const;
